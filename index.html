@@ -592,7 +592,7 @@ a{text-decoration:none;color:inherit}
     <div class="footer-col">
       <h4>ติดต่อ</h4>
       <ul>
-        <li>📧 support@st-shop.com</li>
+        <li>📧 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ef9c9a9f9f809d9baf9c9bc29c87809fc18c8082">[email&#160;protected]</a></li>
         <li>📞 02-xxx-xxxx</li>
         <li>💬 LINE: @stshop</li>
       </ul>
@@ -692,7 +692,7 @@ a{text-decoration:none;color:inherit}
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 /* ══════════════════════════════════════
    SUPABASE INIT
 ══════════════════════════════════════ */
@@ -1418,53 +1418,66 @@ function closeConfirm(){document.getElementById('modal-confirm').style.display='
 /* ══════════════════════════════════════
    BOOT
 ══════════════════════════════════════ */
-  setTimeout(()=>{
-  const l=document.getElementById('global-loading');
-  if(l&&l.style.display!=='none'){
-    l.style.display='none';
+function showApp(hasSession){
+  document.getElementById('global-loading').style.display='none';
+  if(hasSession){
+    document.getElementById('main-app').style.display='';
+  } else {
     document.getElementById('auth-screen').style.display='flex';
   }
-},5000); // ถ้าโหลด 5 วิแล้วยังค้าง ให้แสดง login
-async function init(){
-  const{data:{session}}=await sb.auth.getSession();
-  if(session){
-    currentUser=session.user;
-    const{data:profile}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
-    currentProfile=profile;
-    const name=profile?.display_name||currentUser.email?.split('@')[0]||'User';
-    document.getElementById('user-chip-name').textContent=name;
-    document.getElementById('user-avatar').textContent=name[0].toUpperCase();
-    if(isAdmin()||canEdit()){document.getElementById('admin-bar').classList.add('show');}
-  }
+}
 
-  sb.auth.onAuthStateChange(async(event,session)=>{
-    if(event==='SIGNED_IN'&&session){
+async function init(){
+  // Safety timeout 7s — ถ้าโหลดค้างให้แสดง login
+  const safeTimer=setTimeout(()=>{
+    console.warn('S&T: load timeout — showing login');
+    showApp(false);
+  },7000);
+
+  try{
+    const res=await sb.auth.getSession();
+    const session=res?.data?.session||null;
+
+    if(session){
       currentUser=session.user;
-      const{data:profile}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
-      currentProfile=profile;
-      const name=profile?.display_name||currentUser.email?.split('@')[0]||'User';
+      try{
+        const{data:profile}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+        currentProfile=profile;
+      }catch(e){console.warn('profile:',e);}
+      const name=currentProfile?.display_name||currentUser.email?.split('@')[0]||'User';
       document.getElementById('user-chip-name').textContent=name;
       document.getElementById('user-avatar').textContent=name[0].toUpperCase();
-      document.getElementById('auth-screen').style.display='none';
-      document.getElementById('main-app').style.display='';
       if(isAdmin()||canEdit()){document.getElementById('admin-bar').classList.add('show');}
     }
-  });
 
-  await loadCats();
-  await loadProducts();
-  updateCartBadge();
+    sb.auth.onAuthStateChange(async(event,sess)=>{
+      if(event==='SIGNED_IN'&&sess){
+        currentUser=sess.user;
+        try{
+          const{data:profile}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+          currentProfile=profile;
+        }catch(e){console.warn('profile:',e);}
+        const name=currentProfile?.display_name||currentUser.email?.split('@')[0]||'User';
+        document.getElementById('user-chip-name').textContent=name;
+        document.getElementById('user-avatar').textContent=name[0].toUpperCase();
+        document.getElementById('auth-screen').style.display='none';
+        document.getElementById('main-app').style.display='';
+        if(isAdmin()||canEdit()){document.getElementById('admin-bar').classList.add('show');}
+        await loadCats();await loadProducts();updateCartBadge();
+      }
+    });
 
-  // Hide loading, show app
-  setTimeout(()=>{
-    document.getElementById('global-loading').style.display='none';
-    document.getElementById('global-loading').style.display='none';
-    if(!session){
-      document.getElementById('auth-screen').style.display='flex';
-    }else{
-      document.getElementById('main-app').style.display='';
-    }
-  },1200);
+    try{await loadCats();}catch(e){console.warn('cats:',e);}
+    try{await loadProducts();}catch(e){console.warn('products:',e);}
+    updateCartBadge();
+    clearTimeout(safeTimer);
+    showApp(!!session);
+
+  }catch(e){
+    console.error('S&T init error:',e);
+    clearTimeout(safeTimer);
+    showApp(false);
+  }
 }
 
 init();
