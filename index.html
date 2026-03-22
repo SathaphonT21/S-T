@@ -1418,6 +1418,13 @@ function closeConfirm(){document.getElementById('modal-confirm').style.display='
 /* ══════════════════════════════════════
    BOOT
 ══════════════════════════════════════ */
+  setTimeout(()=>{
+  const l=document.getElementById('global-loading');
+  if(l&&l.style.display!=='none'){
+    l.style.display='none';
+    document.getElementById('auth-screen').style.display='flex';
+  }
+},5000); // ถ้าโหลด 5 วิแล้วยังค้าง ให้แสดง login
 async function init(){
   const{data:{session}}=await sb.auth.getSession();
   if(session){
@@ -1450,6 +1457,7 @@ async function init(){
 
   // Hide loading, show app
   setTimeout(()=>{
+    document.getElementById('global-loading').style.display='none';
     document.getElementById('global-loading').style.display='none';
     if(!session){
       document.getElementById('auth-screen').style.display='flex';
