@@ -1082,7 +1082,7 @@ async function init(){
     });
 
     try{await loadCats();}catch(e){console.warn(e);}
-    try{await loadProducts();}catch(e)try{await loadProducts();}catch(e){console.warn(e);}
+    try{await loadProducts();}catch(e){console.warn(e);}
 
 clearTimeout(safeTimer);
 showApp(!!session);
